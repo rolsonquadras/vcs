@@ -4462,3 +4462,112 @@ func (m *mockUNIRegistrarClient) CreateDID(driverURL string,
 	opts ...uniregistrar.CreateDIDOption) (string, []didmethodoperation.Key, error) {
 	return m.CreateDIDValue, m.CreateDIDKeys, m.CreateDIDErr
 }
+
+const didKeyDocument = `{
+  "@context": "https://www.w3.org/2019/did/v1",
+  "id": "did:sov:danube:VZoG2R1UneUscisG1eLxJb",
+  "service": [],
+  "authentication": [
+    {
+      "type": "Ed25519SignatureAuthentication2018",
+      "publicKey": [
+        "did:sov:danube:VZoG2R1UneUscisG1eLxJb#key-1"
+      ]
+    }
+  ],
+  "publicKey": [
+    {
+      "id": "did:sov:danube:VZoG2R1UneUscisG1eLxJb#key-1",
+      "type": "Ed25519VerificationKey2018",
+      "publicKeyBase58": "Ga1dy6j4zncHqhqWQ7nvpYYZsn1UBaPHGXKuyuu9Upax"
+    }
+  ]
+}
+`
+
+const didKeyVC = `{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://w3id.org/citizenship/v1"
+  ],
+  "type": [
+    "VerifiableCredential",
+    "PermanentResidentCard"
+  ],
+  "credentialSubject": {
+    "id": "did:key:z6Mkte9e5E2GRozAgYyhktX7eTt9woCR4yJLnaqC88FQCSyY",
+    "type": [
+      "PermanentResident",
+      "Person"
+    ],
+    "givenName": "JOHN",
+    "familyName": "SMITH",
+    "gender": "Male",
+    "image": "data:image/png;base64,iVBORw0KGgo...kJggg==",
+    "residentSince": "2015-01-01",
+    "lprCategory": "C09",
+    "lprNumber": "000-000-204",
+    "commuterClassification": "C1",
+    "birthCountry": "Bahamas",
+    "birthDate": "1958-08-17"
+  },
+  "issuer": "did:sov:danube:VZoG2R1UneUscisG1eLxJb",
+  "issuanceDate": "2020-04-22T10:37:22Z",
+  "identifier": "83627465",
+  "name": "Permanent Resident Card",
+  "description": "Government of Example Permanent Resident Card.",
+  "proof": {
+    "type": "Ed25519Signature2018",
+    "created": "2020-04-22T10:37:22Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:sov:danube:VZoG2R1UneUscisG1eLxJb#key-1",
+    "jws": "eyJjcml0IjpbImI2NCJdLCJiNjQiOmZhbHNlLCJhbGciOiJFZERTQSJ9..BhWew0x-txcroGjgdtK-yBCqoetg9DD9SgV4245TmXJi-PmqFzux6Cwaph0r-mbqzlE17yLebjfqbRT275U1AA"
+  }
+}
+`
+
+func TestVerifyCredential(t *testing.T) {
+	endpoint := credentialVerificationsEndpoint
+
+	t.Run("credential verification - success", func(t *testing.T) {
+		didDoc, err := did.ParseDocument([]byte(didKeyDocument))
+		require.NoError(t, err)
+
+		kh, err := keyset.NewHandle(ecdhes.ECDHES256KWAES256GCMKeyTemplate())
+		require.NoError(t, err)
+
+		ops, err := New(&Config{
+			Crypto:             &cryptomock.Crypto{},
+			StoreProvider:      memstore.NewProvider(),
+			KMSSecretsProvider: mem.NewProvider(),
+			KeyManager:         &kms.KeyManager{CreateKeyValue: kh},
+			VDRI:               &vdrimock.MockVDRIRegistry{ResolveValue: didDoc},
+		})
+		require.NoError(t, err)
+
+		ops.didBlocClient = &didbloc.Client{CreateDIDValue: didDoc}
+
+		// verify credential
+		handler := getHandler(t, ops, endpoint, verifierMode)
+
+		vReq := &CredentialsVerificationRequest{
+			Credential: []byte(didKeyVC),
+			Opts: &CredentialsVerificationOptions{
+				Checks: []string{proofCheck},
+			},
+		}
+
+		vReqBytes, err := json.Marshal(vReq)
+		require.NoError(t, err)
+
+		rr := serveHTTP(t, handler.Handle(), http.MethodPost, endpoint, vReqBytes)
+		fmt.Println(rr.Body.String())
+
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		verificationResp := &CredentialsVerificationSuccessResponse{}
+		err = json.Unmarshal(rr.Body.Bytes(), &verificationResp)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(verificationResp.Checks))
+	})
+}
