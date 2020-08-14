@@ -247,6 +247,144 @@ func TestGetProfile(t *testing.T) {
 	})
 }
 
+const didKeyDocument = `{
+        "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://trustbloc.github.io/context/did/trustbloc-v1.jsonld"
+        ],
+        "id": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A",
+        "publicKey": [
+            {
+                "controller": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A",
+                "id": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A#zg2Nyto8ExIuRfBfH5ro",
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "x": "kjNqJ0xnUuq0Nv0oDh-27o_tl8CwnDvfuidcs6tHaYQ",
+                    "y": "8ytfrX5L2nXsCvqYEsNuUdtxmA6xBig1kbQDVBA8DGY"
+                },
+                "type": "JwsVerificationKey2020"
+            },
+            {
+                "controller": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A",
+                "id": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A#Y1wvcAIF2rfBDsBgCqzx",
+                "publicKeyBase58": "GjN3fa4StsdFS2Xckpxmt72yQj12dc5tc3RGXvU2wti3",
+                "type": "Ed25519VerificationKey2018"
+            },
+            {
+                "controller": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A",
+                "id": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A#mXUpf96lW1he0pWN7Q2b",
+                "publicKeyJwk": {
+                    "kty": "OKP",
+                    "crv": "Ed25519",
+                    "x": "xmahCJwH5_CxmCKZw5tUkxzNuRn6vertzXulFZWWrMs"
+                },
+                "type": "JwsVerificationKey2020"
+            }
+        ],
+        "authentication": [
+            "#zg2Nyto8ExIuRfBfH5ro",
+            "#Y1wvcAIF2rfBDsBgCqzx",
+            "#mXUpf96lW1he0pWN7Q2b"
+        ],
+        "assertionMethod": [
+            "#zg2Nyto8ExIuRfBfH5ro",
+            "#Y1wvcAIF2rfBDsBgCqzx",
+            "#mXUpf96lW1he0pWN7Q2b"
+        ]
+    }
+`
+
+const didKeyVC = `{
+            "@context": [
+               "https://www.w3.org/2018/credentials/v1",
+               "https://trustbloc.github.io/context/vc/examples/driving-license-v1.jsonld",
+               "https://trustbloc.github.io/context/vc/examples-ext-v1.jsonld",
+               "https://trustbloc.github.io/context/vc/examples-v1.jsonld"
+            ],
+            "credentialStatus": {
+               "id": "https://issuer-vcs.trustbloc.local/status/1",
+               "type": "CredentialStatusList2017"
+            },
+            "credentialSubject": {
+               "address": "4726 Pine Street, Toronto - A1B 2C3",
+               "expiryDate": "2025-05-26",
+               "id": "did:trustbloc:testnet.trustbloc.local:EiBx5to2RhfBP-bHpAXAGoAHAixrYnEguhgBVNsRNxT06A",
+               "issuedDate": "2020-05-27",
+               "licenceType": "G2",
+               "name": "Foo",
+               "type": "DrivingLicense"
+            },
+            "description": "Drivers Licence for Mr.Foo",
+            "id": "http://example.com/3622f33d-9396-4cd6-87c4-1ef78482f214",
+            "issuanceDate": "2020-08-14T15:51:17.7800365Z",
+            "issuer": {
+               "id": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A",
+               "name": "trustbloc-ed25519signature2018-ed25519"
+            },
+            "name": null,
+            "proof": {
+               "created": "2020-08-14T15:51:22.6381895Z",
+               "jws": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..98LkdL6qGlQIGPu0hbufdBB_cmdm2IK3sseEHijplH6XK0g9Ug6tqTzDeYdynofcCL4AlSEH2o1avhF8vjmkDA",
+               "proofPurpose": "assertionMethod",
+               "type": "Ed25519Signature2018",
+               "verificationMethod": "did:trustbloc:testnet.trustbloc.local:EiB8coR95nwzihLkzJW0YYzPYePkJb7NFyDBsiB07nON7A#Y1wvcAIF2rfBDsBgCqzx"
+            },
+            "type": [
+               "VerifiableCredential",
+               "DrivingLicense"
+            ]
+         }
+`
+
+func TestVerifyCredential3(t *testing.T) {
+	didDoc, err := did.ParseDocument([]byte(didKeyDocument))
+	require.NoError(t, err)
+
+	op, err := New(&Config{
+		VDRI:          &vdrimock.MockVDRIRegistry{ResolveValue: didDoc},
+		StoreProvider: memstore.NewProvider(),
+	})
+	require.NoError(t, err)
+
+	vReq := &verifier.ProfileData{
+		ID:                 "test",
+		Name:               "test verifier",
+		CredentialChecks:   []string{proofCheck, statusCheck},
+		PresentationChecks: []string{proofCheck},
+	}
+
+	err = op.profileStore.SaveProfile(vReq)
+	require.NoError(t, err)
+
+	urlVars := make(map[string]string)
+	urlVars[profileIDPathParam] = vReq.ID
+
+	endpoint := "/test/verifier/credentials"
+
+	err = op.profileStore.SaveProfile(vReq)
+	require.NoError(t, err)
+
+	// verify credential
+	handler := getHandler(t, op, credentialsVerificationEndpoint, http.MethodPost)
+
+	vReq1 := &CredentialsVerificationRequest{
+		Credential: []byte(didKeyVC),
+	}
+
+	vReqBytes, err := json.Marshal(vReq1)
+	require.NoError(t, err)
+
+	rr := serveHTTPMux(t, handler, endpoint, vReqBytes, urlVars)
+
+	fmt.Println(rr.Body.String())
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	verificationResp := &CredentialsVerificationSuccessResponse{}
+	err = json.Unmarshal(rr.Body.Bytes(), &verificationResp)
+	require.NoError(t, err)
+}
+
 func TestVerifyCredential(t *testing.T) {
 	vc, err := verifiable.ParseUnverifiedCredential([]byte(prCardVC))
 	require.NoError(t, err)
@@ -277,6 +415,47 @@ func TestVerifyCredential(t *testing.T) {
 	didID := "did:test:EiBNfNRaz1Ll8BjVsbNv-fWc7K_KIoPuW8GFCh1_Tz_Iuw=="
 
 	verificationsHandler := getHandler(t, op, credentialsVerificationEndpoint, http.MethodPost)
+
+	t.Run("credential verification - custom success", func(t *testing.T) {
+		didDoc, err := did.ParseDocument([]byte(didKeyDocument))
+		require.NoError(t, err)
+
+		ops, err := New(&Config{
+			VDRI:          &vdrimock.MockVDRIRegistry{ResolveValue: didDoc},
+			StoreProvider: memstore.NewProvider(),
+		})
+		require.NoError(t, err)
+
+		err = ops.profileStore.SaveProfile(vReq)
+		require.NoError(t, err)
+
+		cslBytes, err := json.Marshal(&cslstatus.CSL{})
+		require.NoError(t, err)
+
+		ops.httpClient = &mockHTTPClient{doValue: &http.Response{StatusCode: http.StatusOK,
+			Body: ioutil.NopCloser(strings.NewReader(string(cslBytes)))}}
+
+		// verify credential
+		handler := getHandler(t, ops, credentialsVerificationEndpoint, http.MethodPost)
+
+		vReq := &CredentialsVerificationRequest{
+			Credential: []byte(didKeyVC),
+			Opts: &CredentialsVerificationOptions{
+				Checks: []string{proofCheck},
+			},
+		}
+
+		vReqBytes, err := json.Marshal(vReq)
+		require.NoError(t, err)
+
+		rr := serveHTTPMux(t, handler, endpoint, vReqBytes, urlVars)
+
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		verificationResp := &CredentialsVerificationSuccessResponse{}
+		err = json.Unmarshal(rr.Body.Bytes(), &verificationResp)
+		require.NoError(t, err)
+	})
 
 	t.Run("credential verification - success", func(t *testing.T) {
 		pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
