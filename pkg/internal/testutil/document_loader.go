@@ -79,7 +79,7 @@ func DocumentLoader(t *testing.T) *ld.DocumentLoader {
 				Content: governance,
 			},
 			ldcontext.Document{
-				URL:     "https://w3c-ccg.github.io/lds-jws2020/contexts/lds-jws2020-v1.json",
+				URL:     "https://w3id.org/security/suites/jws-2020/v1",
 				Content: jws2020,
 			},
 		),

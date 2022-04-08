@@ -22,7 +22,7 @@ import (
 
 const (
 	defVCContext                = "https://www.w3.org/2018/credentials/v1"
-	jsonWebSignature2020Context = "https://w3c-ccg.github.io/lds-jws2020/contexts/lds-jws2020-v1.json"
+	jsonWebSignature2020Context = "https://w3id.org/security/suites/jws-2020/v1"
 	bbsBlsSignature2020Context  = "https://w3id.org/security/bbs/v1"
 )
 

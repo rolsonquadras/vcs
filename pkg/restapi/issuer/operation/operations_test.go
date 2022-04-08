@@ -1766,7 +1766,7 @@ func TestIssueCredential(t *testing.T) {
 		proof, ok := signedVCResp["proof"].(map[string]interface{})
 		require.True(t, ok)
 		require.Equal(t, cslstatus.Context, signedVCResp["@context"].([]interface{})[1])
-		require.Equal(t, "https://w3c-ccg.github.io/lds-jws2020/contexts/lds-jws2020-v1.json",
+		require.Equal(t, "https://w3id.org/security/suites/jws-2020/v1",
 			signedVCResp["@context"].([]interface{})[2])
 		require.Equal(t, vccrypto.JSONWebSignature2020, proof["type"])
 		require.NotEmpty(t, proof["jws"])

@@ -37,7 +37,7 @@ import (
 
 const (
 	governanceCtx           = "https://trustbloc.github.io/context/governance/context.jsonld"
-	jsonWebSignature2020Ctx = "https://w3c-ccg.github.io/lds-jws2020/contexts/lds-jws2020-v1.json"
+	jsonWebSignature2020Ctx = "https://w3id.org/security/suites/jws-2020/v1"
 
 	profileIDPathParam = "profileID"
 

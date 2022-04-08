@@ -18,7 +18,7 @@ declare -a tests=(
    "vault_server"
 )
 
-TAGS=${TAGS:-all}
+TAGS=governance_rest
 
 PWD=`pwd`
 cd test/bdd
