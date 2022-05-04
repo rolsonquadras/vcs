@@ -8,7 +8,6 @@ package http
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/trustbloc/edge-core/pkg/log"
@@ -24,6 +23,7 @@ type ErrorResponse struct {
 // WriteErrorResponse write error resp
 func WriteErrorResponse(rw http.ResponseWriter, status int, msg string) {
 	rw.WriteHeader(status)
+	rw.Header().Add("Content-Type", "application/json")
 
 	err := json.NewEncoder(rw).Encode(ErrorResponse{
 		Message: msg,
@@ -35,7 +35,9 @@ func WriteErrorResponse(rw http.ResponseWriter, status int, msg string) {
 }
 
 // WriteResponse writes interface value to response
-func WriteResponse(rw io.Writer, v interface{}) {
+func WriteResponse(rw http.ResponseWriter, v interface{}) {
+	rw.Header().Add("Content-Type", "application/json")
+
 	err := json.NewEncoder(rw).Encode(v)
 	if err != nil {
 		logger.Errorf("Unable to send error response, %s", err)

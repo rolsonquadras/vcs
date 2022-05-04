@@ -2943,7 +2943,7 @@ type mockResponseWriter struct {
 }
 
 func (b mockResponseWriter) Header() http.Header {
-	panic("implement me")
+	return make(map[string][]string)
 }
 
 func (b mockResponseWriter) Write([]byte) (int, error) {
